@@ -1,0 +1,19 @@
+{
+  "name": "finance",
+  "version": "1.0.0",
+  "description": "This folder contains a simple static Progressive Web App that can be deployed directly to GitHub Pages.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "echo \"No tests configured\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "yahoo-finance2": "^3.14.0"
+  }
+}

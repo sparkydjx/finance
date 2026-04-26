@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="description" content="A lightweight finance tracker PWA." />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Finance PWA</title>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header>
+        <h1>Finance PWA</h1>
+        <p class="subtitle">Track quick totals from any device.</p>
+      </header>
+
+      <section class="card">
+        <h2>Budget Snapshot</h2>
+        <form id="budget-form">
+          <label for="income">Income</label>
+          <input id="income" name="income" type="number" min="0" step="0.01" required />
+
+          <label for="expenses">Expenses</label>
+          <input id="expenses" name="expenses" type="number" min="0" step="0.01" required />
+
+          <button type="submit">Calculate</button>
+        </form>
+
+        <p id="result" class="result" aria-live="polite">Add values to see your balance.</p>
+      </section>
+
+      <section class="card">
+        <h2>Yahoo Finance Quote</h2>
+        <form id="quote-form">
+          <label for="symbol">Ticker symbol</label>
+          <input id="symbol" name="symbol" type="text" placeholder="AAPL" required />
+          <button type="submit">Get Quote</button>
+        </form>
+        <p id="quote-result" class="result" aria-live="polite">Enter a symbol to fetch live market data.</p>
+      </section>
+    </main>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
