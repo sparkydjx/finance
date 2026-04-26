@@ -6,6 +6,7 @@ const activeTicker = document.getElementById("active-ticker");
 const modulesInput = document.getElementById("modules");
 const queryInput = document.getElementById("query-input");
 const routePreview = document.getElementById("route-preview");
+const requestStatus = document.getElementById("request-status");
 const requestResultBody = document.getElementById("request-result-body");
 
 let currentTicker = "AAPL";
@@ -43,6 +44,10 @@ function renderMessageRow(message) {
   cell.textContent = message;
   row.appendChild(cell);
   requestResultBody.appendChild(row);
+}
+
+function setStatus(message) {
+  if (requestStatus) requestStatus.textContent = message;
 }
 
 function renderTableRows() {
@@ -113,7 +118,8 @@ function refreshRoutePreview() {
 async function runLiveRequest() {
   refreshRoutePreview();
   const endpoint = buildEndpoint();
-  renderMessageRow("Loading live data...");
+  setStatus(`Loading: ${endpoint}`);
+  if (!tableRows.length) renderMessageRow("Loading live data...");
 
   try {
     const response = await fetch(endpoint);
@@ -134,12 +140,17 @@ async function runLiveRequest() {
     const canRenderRow =
       payload && typeof payload === "object" && !Array.isArray(payload) && RESULT_COLUMNS.some((key) => key in payload);
     if (!canRenderRow) {
-      renderMessageRow("This response does not match the Sheet1 quote format. Use request type: quote(symbol).");
+      setStatus("Response does not match quote row format. Use request type: quote(symbol).");
+      if (!tableRows.length) {
+        renderMessageRow("This response does not match the Sheet1 quote format. Use request type: quote(symbol).");
+      }
       return;
     }
     addResultRow(payload);
+    setStatus(`Added ${payload.symbol || currentTicker}. Rows: ${tableRows.length}`);
   } catch (error) {
-    renderMessageRow(error?.message || "Unable to fetch data right now.");
+    setStatus(error?.message || "Unable to fetch data right now.");
+    if (!tableRows.length) renderMessageRow(error?.message || "Unable to fetch data right now.");
   }
 }
 
@@ -180,11 +191,19 @@ requestResultBody?.addEventListener("click", (event) => {
 });
 
 refreshRoutePreview();
+setStatus("Ready.");
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     try {
-      await navigator.serviceWorker.register("./service-worker.js");
+      const isLocalHost =
+        window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      if (isLocalHost) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      } else {
+        await navigator.serviceWorker.register("./service-worker.js");
+      }
     } catch (error) {
       console.error("Service worker registration failed:", error);
     }
