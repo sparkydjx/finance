@@ -21,7 +21,20 @@ Then open <http://localhost:3000>.
 ## API endpoints
 
 - `GET /api/health` - health check
-- `GET /api/quote/:symbol` - fetch quote data from Yahoo Finance (example: `/api/quote/AAPL`)
+- `GET /api/quote/:symbol` - latest quote + analyst target fields
+- `GET /api/chart/:symbol` - chart data (supports `period1`, `period2`, `interval`)
+- `GET /api/historical/:symbol` - historical series (supports `period1`, `period2`, `interval`, `events`)
+- `GET /api/options/:symbol` - options chain
+- `GET /api/search?q=` - symbol/company search
+- `GET /api/quote-summary/:symbol?modules=` - fundamentals modules
+- `GET /api/insights/:symbol` - insights
+- `GET /api/recommendations/:symbol` - recommendations by symbol
+- `GET /api/trending?region=` - trending symbols
+- `GET /api/daily-gainers` - daily gainers list
+- `GET /api/daily-losers` - daily losers list
+- `GET /api/screener?predefined=&count=` - screener results
+
+The PWA now includes a live request builder UI that mirrors the canvas-style demo but uses real API responses for any ticker.
 
 ## FinBERT setup
 

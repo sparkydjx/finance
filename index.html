@@ -33,13 +33,42 @@
       </section>
 
       <section class="card">
-        <h2>Yahoo Finance Quote</h2>
-        <form id="quote-form">
-          <label for="symbol">Ticker symbol</label>
-          <input id="symbol" name="symbol" type="text" placeholder="AAPL" required />
-          <button type="submit">Get Quote</button>
+        <h2>Yahoo Finance Request Demo (Live API)</h2>
+        <form id="request-form">
+          <label for="request-type">Request type</label>
+          <select id="request-type" name="requestType" required>
+            <option value="quote">quote(symbol)</option>
+            <option value="chart">chart(symbol, options)</option>
+            <option value="historical">historical(symbol, options)</option>
+            <option value="options">options(symbol)</option>
+            <option value="search">search(query)</option>
+            <option value="quoteSummary">quoteSummary(symbol, modules)</option>
+            <option value="insights">insights(symbol)</option>
+            <option value="recommendationsBySymbol">recommendationsBySymbol(symbol)</option>
+            <option value="trendingSymbols">trendingSymbols(region)</option>
+            <option value="dailyGainers">dailyGainers()</option>
+            <option value="dailyLosers">dailyLosers()</option>
+            <option value="screener">screener(options)</option>
+          </select>
+
+          <label for="ticker-input">Ticker symbol</label>
+          <div class="row">
+            <input id="ticker-input" name="tickerInput" type="text" placeholder="AAPL" />
+            <button id="execute-ticker" type="button">Execute Ticker</button>
+          </div>
+          <p class="muted">Active ticker: <span id="active-ticker">AAPL</span></p>
+
+          <label for="modules">Quote Summary modules</label>
+          <input id="modules" name="modules" type="text" placeholder="price,summaryDetail,financialData" />
+
+          <label for="query-input">Search query / region / screener id</label>
+          <input id="query-input" name="queryInput" type="text" placeholder="apple, US, or day_gainers" />
+
+          <button type="submit">Run Live Request</button>
         </form>
-        <p id="quote-result" class="result" aria-live="polite">Enter a symbol to fetch live market data.</p>
+
+        <p class="muted">Route preview: <code id="route-preview">/api/quote/AAPL</code></p>
+        <pre id="request-result" class="result-block" aria-live="polite">Run a request to see live API output.</pre>
       </section>
     </main>
 

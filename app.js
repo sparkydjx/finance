@@ -1,7 +1,16 @@
 const form = document.getElementById("budget-form");
 const result = document.getElementById("result");
-const quoteForm = document.getElementById("quote-form");
-const quoteResult = document.getElementById("quote-result");
+const requestForm = document.getElementById("request-form");
+const requestType = document.getElementById("request-type");
+const tickerInput = document.getElementById("ticker-input");
+const executeTickerButton = document.getElementById("execute-ticker");
+const activeTicker = document.getElementById("active-ticker");
+const modulesInput = document.getElementById("modules");
+const queryInput = document.getElementById("query-input");
+const routePreview = document.getElementById("route-preview");
+const requestResult = document.getElementById("request-result");
+
+let currentTicker = "AAPL";
 
 form?.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -18,46 +27,68 @@ form?.addEventListener("submit", (event) => {
       : `You are over budget by ${formatter.format(Math.abs(balance))}.`;
 });
 
-quoteForm?.addEventListener("submit", async (event) => {
+function buildEndpoint() {
+  const type = requestType?.value || "quote";
+  const symbol = currentTicker || "AAPL";
+  const modules = (modulesInput?.value || "price,summaryDetail,financialData").trim();
+  const query = (queryInput?.value || "").trim();
+
+  if (type === "quote") return `/api/quote/${encodeURIComponent(symbol)}`;
+  if (type === "chart")
+    return `/api/chart/${encodeURIComponent(symbol)}?period1=2025-01-01&period2=2026-01-01&interval=1d`;
+  if (type === "historical")
+    return `/api/historical/${encodeURIComponent(symbol)}?period1=2025-01-01&events=history`;
+  if (type === "options") return `/api/options/${encodeURIComponent(symbol)}`;
+  if (type === "search") return `/api/search?q=${encodeURIComponent(query || symbol)}`;
+  if (type === "quoteSummary")
+    return `/api/quote-summary/${encodeURIComponent(symbol)}?modules=${encodeURIComponent(modules)}`;
+  if (type === "insights") return `/api/insights/${encodeURIComponent(symbol)}`;
+  if (type === "recommendationsBySymbol") return `/api/recommendations/${encodeURIComponent(symbol)}`;
+  if (type === "trendingSymbols") return `/api/trending?region=${encodeURIComponent(query || "US")}`;
+  if (type === "dailyGainers") return "/api/daily-gainers";
+  if (type === "dailyLosers") return "/api/daily-losers";
+  return `/api/screener?predefined=${encodeURIComponent(query || "day_gainers")}&count=10`;
+}
+
+function refreshRoutePreview() {
+  if (routePreview) routePreview.textContent = buildEndpoint();
+}
+
+executeTickerButton?.addEventListener("click", () => {
+  const nextTicker = String(tickerInput?.value || "").trim().toUpperCase() || "AAPL";
+  currentTicker = nextTicker;
+  if (activeTicker) activeTicker.textContent = currentTicker;
+  refreshRoutePreview();
+});
+
+requestType?.addEventListener("change", refreshRoutePreview);
+modulesInput?.addEventListener("input", refreshRoutePreview);
+queryInput?.addEventListener("input", refreshRoutePreview);
+
+requestForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const formData = new FormData(quoteForm);
-  const symbol = String(formData.get("symbol") || "").trim().toUpperCase();
+  refreshRoutePreview();
 
-  if (!symbol) {
-    quoteResult.textContent = "Please enter a ticker symbol.";
-    return;
-  }
-
-  quoteResult.textContent = "Loading quote...";
+  const endpoint = buildEndpoint();
+  if (requestResult) requestResult.textContent = "Loading live data...";
 
   try {
-    const response = await fetch(`/api/quote/${encodeURIComponent(symbol)}`);
+    const response = await fetch(endpoint);
     const payload = await response.json();
-
-    if (!response.ok) {
-      throw new Error(payload.error || "Unable to fetch quote.");
-    }
-
-    const currency = payload.currency || "USD";
-    const formatter = new Intl.NumberFormat(undefined, { style: "currency", currency });
-    const price = formatter.format(payload.marketPrice);
-    const changeValue = Number(payload.change || 0);
-    const changePercent = Number(payload.changePercent || 0).toFixed(2);
-    const sign = changeValue >= 0 ? "+" : "";
-    const meanTarget = payload.targetMeanPrice ?? "n/a";
-    const lowTarget = payload.targetLowPrice ?? "n/a";
-    const highTarget = payload.targetHighPrice ?? "n/a";
-    const medianTarget = payload.targetMedianPrice ?? "n/a";
-    const recommendationMean = payload.recommendationMean ?? "n/a";
-    const analystCount = payload.numberOfAnalystOpinions ?? "n/a";
-
-    quoteResult.textContent = `${payload.name} (${payload.symbol}): ${price} (${sign}${changeValue.toFixed(
-      2
-    )}, ${sign}${changePercent}%). Targets: mean ${meanTarget}, low ${lowTarget}, high ${highTarget}, median ${medianTarget}. Recommendation mean: ${recommendationMean}. Analysts: ${analystCount}.`;
+    if (!response.ok) throw new Error(payload.error || "Request failed.");
+    if (requestResult) requestResult.textContent = JSON.stringify(payload, null, 2);
   } catch (error) {
-    quoteResult.textContent = error.message || "Unable to fetch quote right now.";
+    if (requestResult) {
+      requestResult.textContent = JSON.stringify(
+        { error: error?.message || "Unable to fetch data right now." },
+        null,
+        2
+      );
+    }
   }
 });
+
+refreshRoutePreview();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
