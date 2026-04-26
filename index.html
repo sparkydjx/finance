@@ -67,10 +67,34 @@
         </form>
 
         <p class="muted">Route preview: <code id="route-preview">/api/quote/AAPL</code></p>
-        <pre id="request-result" class="result-block" aria-live="polite">Live API output will appear automatically.</pre>
+        <div class="result-table-wrap" aria-live="polite">
+          <table id="request-result-table" class="result-table">
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Name</th>
+                <th>Market Price</th>
+                <th>Change</th>
+                <th>Change Percent</th>
+                <th>Market Time</th>
+                <th>Target Mean Price</th>
+                <th>Target Low Price</th>
+                <th>Target High Price</th>
+                <th>Target Median Price</th>
+                <th>Recommendation Mean </th>
+                <th>Number of Analyst Opinions</th>
+              </tr>
+            </thead>
+            <tbody id="request-result-body">
+              <tr>
+                <td colspan="12">Live API output will appear automatically.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
     </main>
 
-    <script src="./app.js?v=2" type="module"></script>
+    <script src="./app.js?v=3" type="module"></script>
   </body>
 </html>

@@ -8,9 +8,56 @@ const activeTicker = document.getElementById("active-ticker");
 const modulesInput = document.getElementById("modules");
 const queryInput = document.getElementById("query-input");
 const routePreview = document.getElementById("route-preview");
-const requestResult = document.getElementById("request-result");
+const requestResultBody = document.getElementById("request-result-body");
 
 let currentTicker = "AAPL";
+const RESULT_COLUMNS = [
+  "symbol",
+  "name",
+  "marketPrice",
+  "change",
+  "changePercent",
+  "marketTime",
+  "targetMeanPrice",
+  "targetLowPrice",
+  "targetHighPrice",
+  "targetMedianPrice",
+  "recommendationMean",
+  "numberOfAnalystOpinions"
+];
+
+function formatCellValue(column, value) {
+  if (value === undefined || value === null) return "";
+  if (column === "marketTime") return String(value);
+  if (typeof value === "number") return value.toFixed(2);
+  const maybeNumber = Number(value);
+  if (!Number.isNaN(maybeNumber) && Number.isFinite(maybeNumber)) return maybeNumber.toFixed(2);
+  return String(value);
+}
+
+function renderMessageRow(message) {
+  if (!requestResultBody) return;
+  requestResultBody.innerHTML = "";
+  const row = document.createElement("tr");
+  const cell = document.createElement("td");
+  cell.colSpan = RESULT_COLUMNS.length;
+  cell.textContent = message;
+  row.appendChild(cell);
+  requestResultBody.appendChild(row);
+}
+
+function renderDataRow(payload) {
+  if (!requestResultBody) return;
+  requestResultBody.innerHTML = "";
+  const row = document.createElement("tr");
+  RESULT_COLUMNS.forEach((column) => {
+    const cell = document.createElement("td");
+    const value = payload?.[column];
+    cell.textContent = formatCellValue(column, value);
+    row.appendChild(cell);
+  });
+  requestResultBody.appendChild(row);
+}
 
 form?.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -57,7 +104,7 @@ function refreshRoutePreview() {
 async function runLiveRequest() {
   refreshRoutePreview();
   const endpoint = buildEndpoint();
-  if (requestResult) requestResult.textContent = "Loading live data...";
+  renderMessageRow("Loading live data...");
 
   try {
     const response = await fetch(endpoint);
@@ -75,15 +122,15 @@ async function runLiveRequest() {
       const details = payload?.details ? ` (${payload.details})` : "";
       throw new Error(`${payload.error || "Request failed."}${details}`);
     }
-    if (requestResult) requestResult.textContent = JSON.stringify(payload, null, 2);
-  } catch (error) {
-    if (requestResult) {
-      requestResult.textContent = JSON.stringify(
-        { error: error?.message || "Unable to fetch data right now." },
-        null,
-        2
-      );
+    const canRenderRow =
+      payload && typeof payload === "object" && !Array.isArray(payload) && RESULT_COLUMNS.some((key) => key in payload);
+    if (!canRenderRow) {
+      renderMessageRow("This response does not match the Sheet1 quote format. Use request type: quote(symbol).");
+      return;
     }
+    renderDataRow(payload);
+  } catch (error) {
+    renderMessageRow(error?.message || "Unable to fetch data right now.");
   }
 }
 
