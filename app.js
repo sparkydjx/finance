@@ -1,5 +1,3 @@
-const form = document.getElementById("budget-form");
-const result = document.getElementById("result");
 const requestForm = document.getElementById("request-form");
 const requestType = document.getElementById("request-type");
 const tickerInput = document.getElementById("ticker-input");
@@ -11,6 +9,7 @@ const routePreview = document.getElementById("route-preview");
 const requestResultBody = document.getElementById("request-result-body");
 
 let currentTicker = "AAPL";
+const tableRows = [];
 const RESULT_COLUMNS = [
   "symbol",
   "name",
@@ -40,39 +39,49 @@ function renderMessageRow(message) {
   requestResultBody.innerHTML = "";
   const row = document.createElement("tr");
   const cell = document.createElement("td");
-  cell.colSpan = RESULT_COLUMNS.length;
+  cell.colSpan = RESULT_COLUMNS.length + 1;
   cell.textContent = message;
   row.appendChild(cell);
   requestResultBody.appendChild(row);
 }
 
-function renderDataRow(payload) {
+function renderTableRows() {
   if (!requestResultBody) return;
+
+  if (!tableRows.length) {
+    renderMessageRow("Live API output will appear automatically.");
+    return;
+  }
+
   requestResultBody.innerHTML = "";
-  const row = document.createElement("tr");
-  RESULT_COLUMNS.forEach((column) => {
-    const cell = document.createElement("td");
-    const value = payload?.[column];
-    cell.textContent = formatCellValue(column, value);
-    row.appendChild(cell);
+  tableRows.forEach((payload) => {
+    const row = document.createElement("tr");
+
+    const actionCell = document.createElement("td");
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "row-delete-btn";
+    deleteButton.dataset.rowId = payload._rowId;
+    deleteButton.textContent = "Delete";
+    actionCell.appendChild(deleteButton);
+    row.appendChild(actionCell);
+
+    RESULT_COLUMNS.forEach((column) => {
+      const cell = document.createElement("td");
+      const value = payload?.[column];
+      cell.textContent = formatCellValue(column, value);
+      row.appendChild(cell);
+    });
+
+    requestResultBody.appendChild(row);
   });
-  requestResultBody.appendChild(row);
 }
 
-form?.addEventListener("submit", (event) => {
-  event.preventDefault();
-
-  const formData = new FormData(form);
-  const income = Number(formData.get("income"));
-  const expenses = Number(formData.get("expenses"));
-  const balance = income - expenses;
-  const formatter = new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" });
-
-  result.textContent =
-    balance >= 0
-      ? `You are ahead by ${formatter.format(balance)}.`
-      : `You are over budget by ${formatter.format(Math.abs(balance))}.`;
-});
+function addResultRow(payload) {
+  const normalized = { _rowId: `${Date.now()}-${Math.random()}`, ...payload };
+  tableRows.unshift(normalized);
+  renderTableRows();
+}
 
 function buildEndpoint() {
   const type = requestType?.value || "quote";
@@ -128,7 +137,7 @@ async function runLiveRequest() {
       renderMessageRow("This response does not match the Sheet1 quote format. Use request type: quote(symbol).");
       return;
     }
-    renderDataRow(payload);
+    addResultRow(payload);
   } catch (error) {
     renderMessageRow(error?.message || "Unable to fetch data right now.");
   }
@@ -157,6 +166,17 @@ queryInput?.addEventListener("change", runLiveRequest);
 requestForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   runLiveRequest();
+});
+
+requestResultBody?.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return;
+  const rowId = target.dataset?.rowId;
+  if (!rowId) return;
+  const nextRows = tableRows.filter((row) => row._rowId !== rowId);
+  tableRows.length = 0;
+  tableRows.push(...nextRows);
+  renderTableRows();
 });
 
 refreshRoutePreview();
