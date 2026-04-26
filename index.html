@@ -54,7 +54,7 @@
           <label for="ticker-input">Ticker symbol</label>
           <div class="row">
             <input id="ticker-input" name="tickerInput" type="text" placeholder="AAPL" />
-            <button id="execute-ticker" type="button">Execute Ticker</button>
+            <button id="execute-ticker" type="button">Go</button>
           </div>
           <p class="muted">Active ticker: <span id="active-ticker">AAPL</span></p>
 
@@ -64,11 +64,10 @@
           <label for="query-input">Search query / region / screener id</label>
           <input id="query-input" name="queryInput" type="text" placeholder="apple, US, or day_gainers" />
 
-          <button type="submit">Run Live Request</button>
         </form>
 
         <p class="muted">Route preview: <code id="route-preview">/api/quote/AAPL</code></p>
-        <pre id="request-result" class="result-block" aria-live="polite">Run a request to see live API output.</pre>
+        <pre id="request-result" class="result-block" aria-live="polite">Live API output will appear automatically.</pre>
       </section>
     </main>
 

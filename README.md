@@ -18,6 +18,8 @@ npm start
 
 Then open <http://localhost:3000>.
 
+> Note: GitHub Pages only hosts static files. The live `/api/*` request demo requires the Node backend (`npm start`) or a separately deployed API server.
+
 ## API endpoints
 
 - `GET /api/health` - health check

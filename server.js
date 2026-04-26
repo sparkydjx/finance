@@ -186,7 +186,10 @@ app.get("/api/trending", async (req, res) => {
 
 app.get("/api/daily-gainers", async (_req, res) => {
   try {
-    const result = await yahooFinance.dailyGainers();
+    const result = await yahooFinance.screener({
+      scrIds: "day_gainers",
+      count: 25
+    });
     return res.json(result);
   } catch (error) {
     return res.status(500).json({ error: "Failed to fetch daily gainers.", details: error?.message });
@@ -195,7 +198,10 @@ app.get("/api/daily-gainers", async (_req, res) => {
 
 app.get("/api/daily-losers", async (_req, res) => {
   try {
-    const result = await yahooFinance.dailyLosers();
+    const result = await yahooFinance.screener({
+      scrIds: "day_losers",
+      count: 25
+    });
     return res.json(result);
   } catch (error) {
     return res.status(500).json({ error: "Failed to fetch daily losers.", details: error?.message });

@@ -54,28 +54,27 @@ function refreshRoutePreview() {
   if (routePreview) routePreview.textContent = buildEndpoint();
 }
 
-executeTickerButton?.addEventListener("click", () => {
-  const nextTicker = String(tickerInput?.value || "").trim().toUpperCase() || "AAPL";
-  currentTicker = nextTicker;
-  if (activeTicker) activeTicker.textContent = currentTicker;
+async function runLiveRequest() {
   refreshRoutePreview();
-});
-
-requestType?.addEventListener("change", refreshRoutePreview);
-modulesInput?.addEventListener("input", refreshRoutePreview);
-queryInput?.addEventListener("input", refreshRoutePreview);
-
-requestForm?.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  refreshRoutePreview();
-
   const endpoint = buildEndpoint();
   if (requestResult) requestResult.textContent = "Loading live data...";
 
   try {
     const response = await fetch(endpoint);
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "Request failed.");
+    const contentType = response.headers.get("content-type") || "";
+    const rawBody = await response.text();
+
+    if (!contentType.includes("application/json")) {
+      throw new Error(
+        "API returned HTML instead of JSON. This usually means the backend is not running (or you are on GitHub Pages, which is static-only). Run with `npm start` locally or deploy the API separately."
+      );
+    }
+
+    const payload = JSON.parse(rawBody);
+    if (!response.ok) {
+      const details = payload?.details ? ` (${payload.details})` : "";
+      throw new Error(`${payload.error || "Request failed."}${details}`);
+    }
     if (requestResult) requestResult.textContent = JSON.stringify(payload, null, 2);
   } catch (error) {
     if (requestResult) {
@@ -86,6 +85,31 @@ requestForm?.addEventListener("submit", async (event) => {
       );
     }
   }
+}
+
+function applyTickerAndRun() {
+  const nextTicker = String(tickerInput?.value || "").trim().toUpperCase() || "AAPL";
+  currentTicker = nextTicker;
+  if (activeTicker) activeTicker.textContent = currentTicker;
+  runLiveRequest();
+}
+
+executeTickerButton?.addEventListener("click", applyTickerAndRun);
+
+tickerInput?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    applyTickerAndRun();
+  }
+});
+
+requestType?.addEventListener("change", runLiveRequest);
+modulesInput?.addEventListener("change", runLiveRequest);
+queryInput?.addEventListener("change", runLiveRequest);
+
+requestForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  runLiveRequest();
 });
 
 refreshRoutePreview();
