@@ -1,12 +1,12 @@
-const CACHE_NAME = "finance-pwa-v6";
+const CACHE_NAME = "finance-pwa-v12";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
-  "./app.js?v=6",
+  "./app.js?v=12",
   "./manifest.webmanifest",
-  "./icons/icon-192.svg",
-  "./icons/icon-512.svg"
+  "./icons/icon-192.png",
+  "./icons/icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {

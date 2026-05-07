@@ -8,30 +8,98 @@ const queryInput = document.getElementById("query-input");
 const routePreview = document.getElementById("route-preview");
 const requestStatus = document.getElementById("request-status");
 const requestResultBody = document.getElementById("request-result-body");
+const requestResultTable = document.getElementById("request-result-table");
+const buildVersion = document.getElementById("build-version");
+const APP_BUILD = "v12";
 
 let currentTicker = "AAPL";
 const tableRows = [];
+const sortState = {
+  column: null,
+  direction: "asc"
+};
 const RESULT_COLUMNS = [
   "symbol",
   "name",
   "marketPrice",
   "change",
-  "changePercent",
   "marketTime",
   "targetMeanPrice",
+  "meanPercentChange",
   "targetLowPrice",
   "targetHighPrice",
   "targetMedianPrice",
+  "medianPercentChange",
   "recommendationMean",
   "numberOfAnalystOpinions"
 ];
 
+function formatMarketTime(value) {
+  if (value === undefined || value === null || String(value).trim() === "") return "";
+
+  let rawValue = value;
+  if (typeof rawValue === "string" && /^-?\d+(\.\d+)?$/.test(rawValue.trim())) {
+    rawValue = Number(rawValue.trim());
+  }
+
+  let parsedDate;
+  if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+    const timestampMs = Math.abs(rawValue) < 1e12 ? rawValue * 1000 : rawValue;
+    parsedDate = new Date(timestampMs);
+  } else {
+    parsedDate = new Date(rawValue);
+  }
+
+  if (Number.isNaN(parsedDate.getTime())) return String(value);
+
+  const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
+  const day = String(parsedDate.getDate()).padStart(2, "0");
+  const year = String(parsedDate.getFullYear());
+  const hour = String(parsedDate.getHours()).padStart(2, "0");
+  const minute = String(parsedDate.getMinutes()).padStart(2, "0");
+
+  return `${month}/${day}/${year} ${hour}:${minute}`;
+}
+
 function formatCellValue(column, value) {
   if (value === undefined || value === null) return "";
-  if (column === "marketTime") return String(value);
-  if (typeof value === "number") return value.toFixed(2);
-  const maybeNumber = Number(value);
-  if (!Number.isNaN(maybeNumber) && Number.isFinite(maybeNumber)) return maybeNumber.toFixed(2);
+  if (column === "marketTime") return formatMarketTime(value);
+
+  const currencyColumns = new Set([
+    "marketPrice",
+    "change",
+    "targetMeanPrice",
+    "targetLowPrice",
+    "targetHighPrice",
+    "targetMedianPrice"
+  ]);
+
+  const numericValue =
+    typeof value === "number" ? value : Number(String(value).replace(/,/g, "").trim());
+  const hasNumericValue = Number.isFinite(numericValue);
+
+  if ((column === "meanPercentChange" || column === "medianPercentChange") && hasNumericValue) {
+    return `${(numericValue * 100).toFixed(2)}%`;
+  }
+
+  if (currencyColumns.has(column) && hasNumericValue) {
+    return numericValue.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  if (column === "recommendationMean" && hasNumericValue) {
+    return numericValue.toFixed(3);
+  }
+
+  if (column === "numberOfAnalystOpinions" && hasNumericValue) {
+    return Math.round(numericValue).toString();
+  }
+
+  if (hasNumericValue) return numericValue.toFixed(2);
   return String(value);
 }
 
@@ -59,7 +127,8 @@ function renderTableRows() {
   }
 
   requestResultBody.innerHTML = "";
-  tableRows.forEach((payload) => {
+  const sortedRows = getSortedRows();
+  sortedRows.forEach((payload) => {
     const row = document.createElement("tr");
 
     const actionCell = document.createElement("td");
@@ -71,10 +140,11 @@ function renderTableRows() {
     actionCell.appendChild(deleteButton);
     row.appendChild(actionCell);
 
-    RESULT_COLUMNS.forEach((column) => {
+    RESULT_COLUMNS.forEach((column, columnIndex) => {
       const cell = document.createElement("td");
       const value = payload?.[column];
       cell.textContent = formatCellValue(column, value);
+      cell.classList.add(columnIndex < 5 ? "group-general-cell" : "group-analyst-cell");
       row.appendChild(cell);
     });
 
@@ -83,9 +153,125 @@ function renderTableRows() {
 }
 
 function addResultRow(payload) {
-  const normalized = { _rowId: `${Date.now()}-${Math.random()}`, ...payload };
+  const incomingSymbol = String(payload?.symbol || "").trim().toUpperCase();
+  const alreadyExists = tableRows.some(
+    (row) => String(row?.symbol || "").trim().toUpperCase() === incomingSymbol
+  );
+  if (incomingSymbol && alreadyExists) {
+    setStatus(`${incomingSymbol} is already in the table. Duplicate rows are blocked.`);
+    return false;
+  }
+
+  const marketPrice = Number(payload?.marketPrice);
+  const meanPrice = Number(payload?.targetMeanPrice);
+  const medianPrice = Number(payload?.targetMedianPrice);
+  const meanPercentChange =
+    Number.isFinite(marketPrice) && marketPrice !== 0 && Number.isFinite(meanPrice)
+      ? meanPrice / marketPrice - 1
+      : null;
+  const medianPercentChange =
+    Number.isFinite(marketPrice) && marketPrice !== 0 && Number.isFinite(medianPrice)
+      ? medianPrice / marketPrice - 1
+      : null;
+
+  const normalized = {
+    _rowId: `${Date.now()}-${Math.random()}`,
+    ...payload,
+    meanPercentChange,
+    medianPercentChange
+  };
   tableRows.unshift(normalized);
   renderTableRows();
+  return true;
+}
+
+function getColumnSortType(column) {
+  const populatedValues = tableRows.map((row) => row?.[column]).filter((value) => value !== undefined && value !== null && String(value).trim() !== "");
+  if (!populatedValues.length) return "string";
+  const allNumeric = populatedValues.every((value) => {
+    if (typeof value === "number") return Number.isFinite(value);
+    const normalized = String(value).replace(/,/g, "").trim();
+    if (normalized === "") return false;
+    return Number.isFinite(Number(normalized));
+  });
+  return allNumeric ? "number" : "string";
+}
+
+function compareValues(aValue, bValue, column, direction) {
+  const multiplier = direction === "asc" ? 1 : -1;
+  const sortType = getColumnSortType(column);
+
+  if (sortType === "number") {
+    const normalizeNumber = (value) => {
+      if (value === undefined || value === null || String(value).trim() === "") return direction === "asc" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+      if (typeof value === "number") return value;
+      return Number(String(value).replace(/,/g, "").trim());
+    };
+    return (normalizeNumber(aValue) - normalizeNumber(bValue)) * multiplier;
+  }
+
+  const aText = (aValue ?? "").toString().toLowerCase();
+  const bText = (bValue ?? "").toString().toLowerCase();
+  return aText.localeCompare(bText, undefined, { numeric: true }) * multiplier;
+}
+
+function getSortedRows() {
+  if (!sortState.column) return [...tableRows];
+  return [...tableRows].sort((a, b) => compareValues(a?.[sortState.column], b?.[sortState.column], sortState.column, sortState.direction));
+}
+
+function updateHeaderSortIndicators() {
+  if (!requestResultTable) return;
+  const sortableHeaders = requestResultTable.querySelectorAll("thead th[data-column]");
+  sortableHeaders.forEach((header) => {
+    const column = header.dataset.column;
+    if (!column) return;
+
+    header.classList.remove("sort-asc", "sort-desc");
+    header.removeAttribute("aria-sort");
+
+    if (sortState.column === column) {
+      const isAsc = sortState.direction === "asc";
+      header.classList.add(isAsc ? "sort-asc" : "sort-desc");
+      header.setAttribute("aria-sort", isAsc ? "ascending" : "descending");
+    } else {
+      header.setAttribute("aria-sort", "none");
+    }
+  });
+}
+
+function attachHeaderSorting() {
+  if (!requestResultTable) return;
+  const sortableHeaders = requestResultTable.querySelectorAll("thead th[data-column]");
+  sortableHeaders.forEach((header) => {
+    header.classList.add("sortable-column");
+    header.tabIndex = 0;
+
+    const activateSort = () => {
+      const column = header.dataset.column;
+      if (!column) return;
+
+      if (sortState.column === column) {
+        sortState.direction = sortState.direction === "asc" ? "desc" : "asc";
+      } else {
+        sortState.column = column;
+        sortState.direction = "asc";
+      }
+
+      updateHeaderSortIndicators();
+      renderTableRows();
+    };
+
+    header.addEventListener("click", activateSort);
+    header.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        activateSort();
+      }
+    });
+  });
+
+  updateHeaderSortIndicators();
 }
 
 function buildEndpoint() {
@@ -146,8 +332,9 @@ async function runLiveRequest() {
       }
       return;
     }
-    addResultRow(payload);
-    setStatus(`Added ${payload.symbol || currentTicker}. Rows: ${tableRows.length}`);
+    if (addResultRow(payload)) {
+      setStatus(`Added ${payload.symbol || currentTicker}. Rows: ${tableRows.length}`);
+    }
   } catch (error) {
     setStatus(error?.message || "Unable to fetch data right now.");
     if (!tableRows.length) renderMessageRow(error?.message || "Unable to fetch data right now.");
@@ -158,6 +345,7 @@ function applyTickerAndRun() {
   const nextTicker = String(tickerInput?.value || "").trim().toUpperCase() || "AAPL";
   currentTicker = nextTicker;
   if (activeTicker) activeTicker.textContent = currentTicker;
+  if (requestType) requestType.value = "quote";
   runLiveRequest();
 }
 
@@ -191,7 +379,9 @@ requestResultBody?.addEventListener("click", (event) => {
 });
 
 refreshRoutePreview();
-setStatus("Ready.");
+if (buildVersion) buildVersion.textContent = APP_BUILD;
+setStatus(`Ready. (${APP_BUILD})`);
+attachHeaderSorting();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {

@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0f172a" />
     <meta name="description" content="A lightweight finance tracker PWA." />
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="./icons/icon-192.svg" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
     <link rel="stylesheet" href="./styles.css" />
     <title>Finance PWA</title>
   </head>
@@ -15,6 +18,7 @@
       <header>
         <h1>Finance PWA</h1>
         <p class="subtitle">Track quick totals from any device.</p>
+        <p class="muted">Build: <span id="build-version">v12</span></p>
       </header>
 
       <section class="card">
@@ -57,24 +61,30 @@
           <table id="request-result-table" class="result-table">
             <thead>
               <tr>
+                <th></th>
+                <th colspan="5" class="group-general">General</th>
+                <th colspan="8" class="group-analyst">Analyst</th>
+              </tr>
+              <tr>
                 <th>Action</th>
-                <th>Symbol</th>
-                <th>Name</th>
-                <th>Market Price</th>
-                <th>Change</th>
-                <th>Change Percent</th>
-                <th>Market Time</th>
-                <th>Target Mean Price</th>
-                <th>Target Low Price</th>
-                <th>Target High Price</th>
-                <th>Target Median Price</th>
-                <th>Recommendation Mean </th>
-                <th>Number of Analyst Opinions</th>
+                <th data-column="symbol" class="group-general">Symbol</th>
+                <th data-column="name" class="group-general">Name</th>
+                <th data-column="marketPrice" class="group-general">Market Price</th>
+                <th data-column="change" class="group-general">Change</th>
+                <th data-column="marketTime" class="group-general">Market Time</th>
+                <th data-column="targetMeanPrice" class="group-analyst">Mean Price</th>
+                <th data-column="meanPercentChange" class="group-analyst">Mean % Change</th>
+                <th data-column="targetLowPrice" class="group-analyst">Low Price</th>
+                <th data-column="targetHighPrice" class="group-analyst">High Price</th>
+                <th data-column="targetMedianPrice" class="group-analyst">Median Price</th>
+                <th data-column="medianPercentChange" class="group-analyst">Median % Change</th>
+                <th data-column="recommendationMean" class="group-analyst">Analyst score</th>
+                <th data-column="numberOfAnalystOpinions" class="group-analyst">Number of Opinions</th>
               </tr>
             </thead>
             <tbody id="request-result-body">
               <tr>
-                <td colspan="13">Live API output will appear automatically.</td>
+                <td colspan="14">Live API output will appear automatically.</td>
               </tr>
             </tbody>
           </table>
@@ -82,6 +92,6 @@
       </section>
     </main>
 
-    <script src="./app.js?v=6" type="module"></script>
+    <script src="./app.js?v=12" type="module"></script>
   </body>
 </html>

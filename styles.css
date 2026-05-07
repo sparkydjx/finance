@@ -122,6 +122,42 @@ button {
   background: #f1f5f9;
 }
 
+.result-table th.group-general,
+.result-table td.group-general-cell {
+  background: #f0f9ff;
+}
+
+.result-table th.group-analyst,
+.result-table td.group-analyst-cell {
+  background: #f8fafc;
+}
+
+.result-table th.group-analyst,
+.result-table td.group-analyst-cell {
+  border-left: 2px solid #93c5fd;
+}
+
+.result-table th.sortable-column {
+  cursor: pointer;
+  user-select: none;
+}
+
+.result-table th.sortable-column::after {
+  content: " \2195";
+  font-size: 0.75rem;
+  opacity: 0.45;
+}
+
+.result-table th.sortable-column.sort-asc::after {
+  content: " \2191";
+  opacity: 0.9;
+}
+
+.result-table th.sortable-column.sort-desc::after {
+  content: " \2193";
+  opacity: 0.9;
+}
+
 .row-delete-btn {
   margin: 0;
   padding: 0.35rem 0.55rem;
@@ -176,5 +212,16 @@ button {
 
   .result-table th {
     background: #0f172a;
+  }
+
+  .result-table th.group-general,
+  .result-table td.group-general-cell {
+    background: #0b2942;
+  }
+
+  .result-table th.group-analyst,
+  .result-table td.group-analyst-cell {
+    background: #132033;
+    border-left-color: #3b82f6;
   }
 }
